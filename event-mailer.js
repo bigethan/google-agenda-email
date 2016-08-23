@@ -1,5 +1,5 @@
 /**
- * A script to instal into google app scripts
+ * A script to install into google app scripts
  * https://www.google.com/script/start/
  * That will email your agenda for the next day whenever
  * you specify a trigger. (I set it daily at 8-9pm)
@@ -17,7 +17,14 @@ function getEventsAndMail() {
   var subject = "Tomorrow's Meetings"
   var message = '';
   var timeSplit;
+  var startSplit;
+  var endSplit;
   var niceTime;
+  var niceStart;
+  var niceEnd;
+  var eventLoc;
+  var locSplit;
+  var niceLoc = '';
 
   // event data
   var messageEvents = [];
@@ -33,24 +40,32 @@ function getEventsAndMail() {
   d.setDate(d.getDate() + 1);
   var tomorrowPm = new Date(d)
 
-  // get the events
-  events = CalendarApp.getDefaultCalendar().getEvents(tomorrowAm, tomorrowPm);
+  // not a weekend
+  if (tomorrowAm.getDay() !== 6 && tomorrowAm.getDay() !== 0) {
+    // get the events
+    events = CalendarApp.getDefaultCalendar().getEvents(tomorrowAm, tomorrowPm);
 
-  if (!events.length) {
-    // TODO: weekend check?
-    subject = 'NO MEETINGS?';
-    message = "Probably a bug, check your calendar";
-  } else {
-    // create the list
-    for (var i = 0; i < events.length; i++) {
-      startSplit = events[i].getStartTime().toTimeString().split(':');
-      niceStart = startSplit[0] + ':' + startSplit[1]
-      endSplit = events[i].getEndTime().toTimeString().split(':');
-      niceEnd = endSplit[0] + ':' + endSplit[1]
-      message += niceStart + ' - ' + niceEnd + "\n\t"
-        + events[i].getTitle() + "\n";
+    if (!events.length) {
+      subject = 'NO MEETINGS?';
+      message = "Probably a bug, check your calendar";
+    } else {
+      // create the list
+      for (var i = 0; i < events.length; i++) {
+        startSplit = events[i].getStartTime().toTimeString().split(':');
+        niceStart = startSplit[0] + ':' + startSplit[1]
+        endSplit = events[i].getEndTime().toTimeString().split(':');
+        niceEnd = endSplit[0] + ':' + endSplit[1];
+        eventLoc = events[i].getLocation();
+        niceLoc = '';
+        if (eventLoc) {
+          locSplit = eventLoc.split('(');
+          niceLoc = ' in ' + locSplit[0].trim()
+        }
+        message += niceStart + ' - ' + niceEnd + niceLoc + "\n\t"
+          + events[i].getTitle().trim() + "\n";
+      }
     }
-  }
 
-  MailApp.sendEmail(mailTo, subject, message);
+    MailApp.sendEmail(mailTo, subject, message);
+  }
 }
